@@ -1,0 +1,67 @@
+# Busca las noticias cada 3 horas y publica el sitio en GitHub Pages (gratis).
+# No hace falta tocar nada acá. Para cambiar la frecuencia, editar la línea "cron".
+name: Buscar noticias y publicar
+
+on:
+  schedule:
+    - cron: "7 */3 * * *"      # cada 3 horas, minuto 7 (hora UTC; Argentina = UTC-3)
+  workflow_dispatch:            # permite el botón «Run workflow» en la pestaña Actions
+
+# Una sola ejecución a la vez (si hay otra en curso, la nueva espera)
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  buscar:
+    name: Buscar noticias y generar el sitio
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install requests beautifulsoup4 apscheduler
+
+      - name: Buscar noticias y generar el sitio
+        env:
+          PYTHONIOENCODING: utf-8
+          INTERVALO_HORAS: "3"
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          # La memoria de la ejecución anterior (historial, notas ya revisadas) se recupera del propio sitio publicado
+          python generar_sitio.py --salida site --estado-previo-url "https://${OWNER}.github.io/${REPO}"
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  publicar:
+    name: Publicar el sitio
+    needs: buscar
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write        # publicar en GitHub Pages
+      id-token: write     # verificar el origen de la publicación
+      actions: write      # mantener activo el calendario (ver abajo)
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+      # GitHub pausa los calendarios de repositorios públicos sin actividad en 60 días.
+      # Volver a habilitar el flujo en cada ejecución evita que se pause.
+      - name: Mantener activo el calendario
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow enable buscar.yml --repo "$GITHUB_REPOSITORY"
