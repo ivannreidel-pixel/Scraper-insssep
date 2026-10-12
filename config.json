@@ -1,0 +1,10 @@
+{
+  "intervalo_horas": 3,
+  "puerto": 8000,
+  "palabras_clave": [
+    "INSSSEP",
+    "Rafael Meneses"
+  ],
+  "horas_maximas": 72,
+  "coincidencia": "cualquiera"
+}

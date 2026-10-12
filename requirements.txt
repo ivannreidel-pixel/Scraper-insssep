@@ -1,0 +1,6 @@
+# Librerías necesarias (sin versión fija, para que instale en cualquier Python 3.9+)
+requests
+beautifulsoup4
+apscheduler
+fastapi
+uvicorn

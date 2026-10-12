@@ -1,0 +1,15 @@
+# Datos que genera el programa (no se suben: el servidor los regenera)
+ultimas_noticias.json
+historial_noticias.json
+notas_revisadas.json
+sitios_detectados.json
+medios_descubiertos.json
+scraper.log*
+
+# Pruebas y archivos temporales
+site/
+site_prueba/
+__pycache__/
+*.pyc
+*.zip
+.venv/

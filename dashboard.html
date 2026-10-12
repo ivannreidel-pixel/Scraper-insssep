@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#063565">
+<title>Buscador de Noticias · INSSSEP</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23063565'/%3E%3Cpath d='M12 20l40-8v8l-40 8zM12 34l40-8v8l-40 8zM12 48l40-8v8l-40 8z' fill='white'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Paleta y tipografía tomadas del sitio oficial chaco.gob.ar */
+  :root {
+    --primary: #063565;
+    --primary-dark: #00203a;
+    --secondary: #5059bc;
+    --accent: #8a9a46;
+    --accent-ink: #5f6c2a;
+    --bg: #f1f4f8;
+    --card: #ffffff;
+    --ink: #14243a;
+    --muted: #5d6b7f;
+    --line: #dde4ee;
+    --tint: #e7eef7;
+    --danger: #b3261e;
+    --font: "Kanit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --shadow: 0 1px 2px rgba(6,53,101,.06), 0 6px 18px rgba(6,53,101,.07);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font); font-weight: 400; font-size: 16px; line-height: 1.5; min-height: 100vh; }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--secondary); outline-offset: 2px; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- barra superior ---------- */
+  .topbar { background: var(--primary); }
+  .topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 68px; }
+  .topbar img { height: 34px; width: auto; display: block; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; color: #fff; background: linear-gradient(115deg, var(--primary) 0%, var(--primary-dark) 100%); padding: 38px 0 64px; }
+  .hero::before, .hero::after {  /* franjas inclinadas, eco del isotipo */
+    content: ""; position: absolute; right: -60px; width: 460px; height: 26px; background: rgba(255,255,255,.07); transform: rotate(-11deg); border-radius: 3px;
+  }
+  .hero::before { top: 34px; box-shadow: 0 54px 0 rgba(255,255,255,.07), 0 108px 0 rgba(255,255,255,.07); }
+  .hero::after { display: none; }
+  .hero .wrap { position: relative; }
+  h1 { font-weight: 800; font-size: clamp(2.4rem, 8vw, 4.6rem); line-height: 1; letter-spacing: -.01em; text-transform: uppercase; margin: 6px 0 10px; }
+  .hero p.lede { max-width: 52ch; color: #cfe0f3; font-weight: 300; font-size: 1.08rem; }
+  .status { display: flex; align-items: flex-start; gap: 10px; margin-top: 22px; font-size: 14px; font-weight: 400; color: #e6f0fb; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #9bd27a; flex: none; margin-top: 7px; }
+  .dot.busy { background: #ffd24d; animation: pulse 1s ease-in-out infinite; }
+  .dot.off { background: #8fa6c1; }
+  @keyframes pulse { 50% { transform: scale(1.6); opacity: .5; } }
+
+  main.wrap { margin-top: -38px; position: relative; padding-bottom: 70px; }
+
+  /* ---------- tarjetas base ---------- */
+  .card { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); }
+
+  .share { display: none; align-items: center; gap: 8px 14px; flex-wrap: wrap; padding: 12px 16px; margin-bottom: 14px; border-left: 5px solid var(--accent); font-size: 14px; }
+  .share.on { display: flex; }
+  .share b { color: var(--primary); font-weight: 600; }
+  .share .hint { color: var(--muted); font-weight: 300; flex: 1 1 200px; }
+  .share code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; background: var(--tint); padding: 3px 8px; border-radius: 6px; word-break: break-all; flex: 1 1 240px; }
+  .share .acts { margin-left: auto; }
+  .share [hidden] { display: none !important; }
+
+  [hidden] { display: none !important; }
+  .info-est { display: flex; align-items: center; gap: 14px; padding: 16px 20px; margin-bottom: 14px; border-left: 5px solid var(--accent); }
+  .info-est .ie-ico { font-size: 1.6rem; line-height: 1; }
+  .info-est .ie-txt { flex: 1; display: grid; gap: 2px; min-width: 0; }
+  .info-est strong { font-weight: 600; color: var(--primary); }
+  .info-est .ie-txt span { font-size: 13.5px; color: var(--muted); font-weight: 300; }
+  @media (max-width: 560px) { .info-est { flex-wrap: wrap; } }
+  .aviso { font-size: 13px; color: var(--muted); font-weight: 300; margin: 0 2px 12px; }
+  .tag { font-size: 12px; font-weight: 500; padding: 1px 9px; border-radius: 99px; border: 1.5px solid var(--primary); color: var(--primary); }
+  .tag.k2 { border-color: var(--accent); color: var(--accent-ink); }
+  select.fk { font-size: 14px; padding: 4px 10px; border-radius: 99px; }
+
+  /* ---------- controles ---------- */
+  .controls { display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 720px) { .controls { grid-template-columns: 1fr; } }
+
+  .btn-buscar {
+    position: relative; overflow: hidden; cursor: pointer; border: 0; border-radius: 14px;
+    background: var(--primary); color: #fff; text-align: left; font-family: var(--font);
+    padding: 22px 26px; min-height: 104px; box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 18px; transition: transform .15s, box-shadow .15s, background .2s;
+  }
+  .btn-buscar:hover:not(:disabled) { background: #0a4685; transform: translateY(-2px); box-shadow: 0 10px 24px rgba(6,53,101,.25); }
+  .btn-buscar:active:not(:disabled) { transform: none; }
+  .btn-buscar:disabled { cursor: progress; background: var(--primary); }
+  .btn-buscar .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--secondary); transition: width .4s; }
+  .btn-buscar .ico { position: relative; flex: none; width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,.14); display: grid; place-items: center; }
+  .btn-buscar .ico svg { width: 24px; height: 24px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; }
+  .btn-buscar.busy .ico svg { animation: spin 1.1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn-buscar .txt { position: relative; }
+  .btn-buscar b { display: block; font-weight: 700; font-size: 1.55rem; text-transform: uppercase; letter-spacing: .02em; line-height: 1.1; }
+  .btn-buscar small { display: block; font-weight: 300; font-size: 13.5px; color: #cfe0f3; margin-top: 4px; }
+
+  .panel-auto { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+  .panel-auto .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .panel-auto strong { font-weight: 600; font-size: 1.05rem; color: var(--primary); }
+  .panel-auto .hint { font-size: 13px; color: var(--muted); font-weight: 300; }
+  .switch { position: relative; width: 56px; height: 32px; flex: none; }
+  .switch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 1; width: 100%; height: 100%; }
+  .switch i { position: absolute; inset: 0; border-radius: 99px; background: #c3cddb; transition: background .2s; }
+  .switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+  .switch input:checked + i { background: var(--accent); }
+  .switch input:checked + i::after { transform: translateX(24px); }
+  .switch input:focus-visible + i { outline: 3px solid var(--secondary); outline-offset: 2px; }
+  select { font: inherit; font-size: 13px; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 3px 6px; }
+
+  /* ---------- números ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 26px; }
+  @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { padding: 14px 18px; border-top: 4px solid var(--primary); }
+  .stat.hot { border-top-color: var(--secondary); }
+  .stat.ok { border-top-color: var(--accent); }
+  .stat.todo { border-top-color: #d9a21b; }
+  .stat .n { font-weight: 700; font-size: 2.3rem; line-height: 1.1; color: var(--primary); }
+  .stat.hot .n { color: var(--secondary); }
+  .stat .n.sm { font-size: 1.5rem; padding-top: 8px; }
+  .stat .l { font-size: 12.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; }
+
+  /* ---------- pestañas ---------- */
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .tab { font-family: var(--font); font-weight: 500; font-size: 15px; padding: 9px 18px; border-radius: 99px; border: 1.5px solid var(--line); background: #fff; color: var(--primary); cursor: pointer; transition: .15s; }
+  .tab:hover { border-color: var(--primary); }
+  .tab[aria-selected="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .tab .badge { display: inline-block; min-width: 22px; padding: 0 7px; margin-left: 6px; border-radius: 99px; background: var(--tint); color: var(--primary); font-size: 12.5px; font-weight: 600; }
+  .tab[aria-selected="true"] .badge { background: rgba(255,255,255,.2); color: #fff; }
+  .tools { margin-left: auto; font-size: 14px; display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  .tools input { accent-color: var(--primary); width: 18px; height: 18px; }
+
+  /* ---------- noticias ---------- */
+  .list { list-style: none; display: grid; gap: 10px; }
+  .item { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 16px 20px; display: grid; gap: 6px; border-left: 5px solid var(--line); opacity: 0; transform: translateY(8px); animation: rise .45s forwards; }
+  .item.nueva { border-left-color: var(--secondary); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  .item .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; }
+  .chipmedio { background: var(--tint); color: var(--primary); font-weight: 500; padding: 1px 10px; border-radius: 99px; text-transform: uppercase; letter-spacing: .05em; }
+  .nuevabadge { background: var(--secondary); color: #fff; font-weight: 600; padding: 1px 10px; border-radius: 99px; letter-spacing: .08em; }
+  .when { color: var(--muted); font-weight: 300; margin-left: auto; }
+  .item h3 { font-weight: 500; font-size: 1.12rem; line-height: 1.3; color: var(--primary-dark); }
+  .item h3 a { text-decoration: none; }
+  .item h3 a:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .empty { text-align: center; padding: 48px 16px; color: var(--muted); background: var(--card); border-radius: 14px; box-shadow: var(--shadow); font-size: 1.1rem; }
+  .empty small { display: block; font-weight: 300; font-size: 14px; margin-top: 6px; }
+
+  .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .lnk { font-size: 13.5px; font-weight: 500; text-decoration: none; padding: 6px 14px; border-radius: 99px; border: 1.5px solid var(--primary); color: var(--primary); white-space: nowrap; transition: .15s; }
+  .lnk:hover { background: var(--primary); color: #fff; }
+  .lnk.sec { border-color: var(--line); color: var(--muted); }
+  .lnk.sec:hover { background: var(--tint); color: var(--primary); border-color: var(--tint); }
+
+  /* ---------- desplegables ---------- */
+
+  footer { margin-top: 36px; text-align: center; font-size: 12.5px; color: var(--muted); font-weight: 300; }
+
+  /* ---------- modal PIN y aviso ---------- */
+  dialog { margin: auto; border: 0; border-radius: 16px; background: #fff; color: var(--ink); padding: 26px; width: min(92vw, 360px); box-shadow: 0 20px 60px rgba(0,20,50,.35); }
+  dialog::backdrop { background: rgba(0,32,58,.6); }
+  dialog h2 { font-weight: 700; color: var(--primary); font-size: 1.4rem; margin-bottom: 4px; }
+  dialog p { font-size: 14px; color: var(--muted); margin-bottom: 14px; font-weight: 300; }
+  dialog input { width: 100%; font-family: var(--font); font-size: 1.7rem; letter-spacing: .3em; text-align: center; padding: 8px; border: 2px solid var(--line); border-radius: 10px; color: var(--ink); }
+  dialog input:focus { border-color: var(--primary); outline: 0; }
+  dialog .acts { margin-top: 16px; justify-content: flex-end; }
+  .b2 { font: inherit; font-weight: 500; padding: 9px 20px; border-radius: 99px; border: 1.5px solid var(--line); background: #fff; color: var(--primary); cursor: pointer; }
+  .b2.pri { background: var(--primary); border-color: var(--primary); color: #fff; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 30px); opacity: 0; background: var(--primary-dark); color: #fff; padding: 11px 20px; border-radius: 99px; font-size: 14px; transition: .25s; pointer-events: none; max-width: 90vw; z-index: 10; }
+  #toast.show { transform: translate(-50%, 0); opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .item { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <img src="assets/logo_insssep.png" alt="INSSSEP">
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>Buscador de noticias</h1>
+    <p class="lede" id="lede">Noticias de las últimas 72 hs sobre INSSSEP</p>
+    <div class="status" id="status"><span class="dot off"></span><span>Conectando…</span></div>
+  </div>
+</section>
+
+<main class="wrap">
+
+  <section class="card info-est" id="infoEst" hidden>
+    <div class="ie-ico" aria-hidden="true">🔄</div>
+    <div class="ie-txt">
+      <strong>Se actualiza sola, cada <span id="ieHoras" style="font-size:inherit;color:inherit;font-weight:inherit">3</span> horas</strong>
+      <span id="ieDetalle">—</span>
+    </div>
+    <a class="b2" id="ieAdmin" href="#" target="_blank" rel="noopener noreferrer" hidden title="Solo para quien administra el proyecto en GitHub">Actualizar ahora ↗</a>
+  </section>
+
+  <div class="card share" id="share">
+    <b>🌍 Compartir con otra persona</b>
+    <span class="hint" id="shareHint">Genera un link para que lo vea desde su teléfono o PC, en cualquier red.</span>
+    <code id="shareUrl" hidden></code>
+    <span class="acts">
+      <button class="b2 pri" id="shareCopy" type="button" hidden>Copiar link</button>
+      <button class="b2" id="shareBtn" type="button">Generar link</button>
+    </span>
+  </div>
+
+  <section class="controls" aria-label="Controles">
+    <button class="btn-buscar" id="btnBuscar" type="button">
+      <i class="fill" id="fill"></i>
+      <span class="ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+      <span class="txt"><b id="btnTxt">Buscar ahora</b><small id="btnSub">Busca en todos los medios (1 a 2 minutos)</small></span>
+    </button>
+    <div class="card panel-auto">
+      <div class="row">
+        <strong>Búsqueda automática</strong>
+        <label class="switch"><input type="checkbox" id="auto" aria-label="Activar búsqueda automática"><i></i></label>
+      </div>
+      <div class="row">
+        <span class="hint" id="autoHint">Apagada. Solo busca cuando vos lo pedís.</span>
+        <label class="hint">cada <select id="horas">
+          <option value="1">1 h</option><option value="2">2 h</option><option value="3" selected>3 h</option>
+          <option value="6">6 h</option><option value="12">12 h</option><option value="24">24 h</option>
+        </select></label>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats" aria-label="Resumen">
+    <div class="card stat"><div class="n" id="sTotal">–</div><div class="l" id="sTotalL">Últimas 72 h</div></div>
+    <div class="card stat hot"><div class="n" id="sNuevas">–</div><div class="l" id="sNuevasL">Nuevas</div></div>
+    <div class="card stat ok"><div class="n" id="sMedios">–</div><div class="l">Medios consultados</div></div>
+    <div class="card stat todo"><div class="n sm" id="sCuando">–</div><div class="l" id="sCuandoL">Última búsqueda</div></div>
+  </section>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabAhora" aria-selected="true">Últimas noticias</button>
+    <button class="tab" role="tab" id="tabHist" aria-selected="false">Historial</button>
+    <div class="tools" id="toolsNuevas">
+      <select class="fk" id="filtroPalabra" aria-label="Filtrar por palabra clave"><option value="">Todas las palabras</option></select>
+      <label><input type="checkbox" id="soloNuevas"> Solo nuevas</label>
+    </div>
+  </div>
+  <p class="aviso" id="aviso"></p>
+
+  <div id="vista"></div>
+
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const state = { est: null, tab: "ahora", datos: null, hist: null, ultimaTs: null, timer: null };
+  // Sitio publicado (GitHub Pages): solo lectura; los datos vienen de archivos que se regeneran solos.
+  const ESTATICO = !!window.MODO_ESTATICO;
+  const RUTAS = ESTATICO
+    ? { estado: "datos/estado.json", noticias: "datos/noticias.json", historial: "datos/historial.json" }
+    : { estado: "api/estado", noticias: "api/noticias", historial: "api/historial" };
+  const pedir = ruta => fetch(ESTATICO ? `${ruta}?t=${Date.now()}` : ruta).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+
+  /* ---------- utilidades ---------- */
+  function hace(iso) {
+    if (!iso) return "—";
+    const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 60) return "recién";
+    if (s < 3600) return `hace ${Math.floor(s / 60)} min`;
+    if (s < 86400) return `hace ${Math.floor(s / 3600)} h`;
+    return new Date(iso).toLocaleDateString("es-AR", { day: "numeric", month: "short" });
+  }
+  const hora = iso => new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  function el(tag, props = {}, ...kids) {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === "class") n.className = v; else if (k === "text") n.textContent = v; else n.setAttribute(k, v);
+    }
+    kids.forEach(k => n.append(k));
+    return n;
+  }
+  function urlSegura(u) { try { const p = new URL(u); return /^https?:$/.test(p.protocol) ? p.href : null; } catch (e) { return null; } }
+  let toastT;
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 3500);
+  }
+
+  function haceLargo(iso) {
+    const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 3600) return `hace ${Math.max(1, Math.floor(s / 60))} min`;
+    if (s < 86400) return `hace ${Math.floor(s / 3600)} h`;
+    const d = Math.floor(s / 86400);
+    return `hace ${d} ${d === 1 ? "día" : "días"}`;
+  }
+
+  /* ---------- API ---------- */
+  async function accion(path, body) {
+    const r = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {})
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.detail || "Error");
+    return j;
+  }
+
+  /* ---------- estado ---------- */
+  function renderEstado() {
+    const e = state.est; if (!e) return;
+    if (ESTATICO) renderEstadoEstatico(e);
+    else {
+    const busy = e.buscando, p = e.progreso || {};
+    const st = $("status");
+    st.replaceChildren(el("span", { class: "dot" + (busy ? " busy" : (e.automatico ? "" : " off")) }));
+    let txt;
+    if (busy) txt = `Buscando (${p.origen}) · ${p.hechos}/${p.total} medios${p.ultimo ? " · " + p.ultimo : ""}`;
+    else if (e.error) txt = "La última búsqueda falló: " + e.error;
+    else if (e.automatico && e.proxima_busqueda) txt = `Listo · próxima búsqueda automática a las ${hora(e.proxima_busqueda)}`;
+    else txt = "Listo · esperando que pidas una búsqueda";
+    st.append(el("span", { text: txt }));
+
+    const b = $("btnBuscar");
+    b.disabled = busy; b.classList.toggle("busy", busy);
+    $("btnTxt").textContent = busy ? "Buscando…" : "Buscar ahora";
+    $("btnSub").textContent = busy ? `${p.hechos} de ${p.total} medios revisados` : "Busca en todos los medios (1 a 2 minutos)";
+    $("fill").style.width = busy ? `${Math.round(100 * p.hechos / Math.max(1, p.total))}%` : "0";
+
+    $("auto").checked = e.automatico;
+    if (document.activeElement !== $("horas")) $("horas").value = String(e.intervalo_horas);
+    $("autoHint").textContent = e.automatico
+      ? `Activa · próxima a las ${e.proxima_busqueda ? hora(e.proxima_busqueda) : "—"}`
+      : "Apagada. Solo busca cuando vos lo pedís.";
+    }
+
+    const u = e.ultima;
+    $("sTotal").textContent = u ? u.total_noticias : "–";
+    $("sNuevas").textContent = u ? u.noticias_nuevas : "–";
+    $("sMedios").textContent = u ? u.medios_buscados - u.medios_fallidos : "–";
+    $("sCuando").textContent = u ? hace(u.timestamp) : "nunca";
+    if (ESTATICO) { $("sCuandoL").textContent = "Última actualización"; $("sNuevasL").textContent = "Nuevas (24 h)"; }
+    $("sTotalL").textContent = `Últimas ${e.horas_maximas} h`;
+
+    const todas = e.coincidencia === "todas";
+    const kw = (e.palabras_clave || []).join(todas ? " y " : " o ");
+    $("lede").textContent = `Noticias de las últimas ${e.horas_maximas} hs sobre INSSSEP`;
+    const sel = $("filtroPalabra");
+    sel.hidden = todas;  // si toda nota debe tener todas las palabras, filtrar por palabra no tiene sentido
+    if (sel.options.length !== (e.palabras_clave || []).length + 1) {
+      sel.replaceChildren(el("option", { value: "", text: "Todas las palabras" }),
+        ...(e.palabras_clave || []).map(p => el("option", { value: p, text: p })));
+    }
+    const desc = [];
+    if (u && u.descartadas_antiguas) desc.push(`${u.descartadas_antiguas} por tener más de ${e.horas_maximas} h`);
+    if (u && u.descartadas_sin_palabras) desc.push(`${u.descartadas_sin_palabras} por mencionar solo una de las palabras`);
+    if (u && u.descartadas_sin_fecha) desc.push(`${u.descartadas_sin_fecha} por no poder comprobar su fecha`);
+    $("aviso").textContent = `Solo se muestran notas de las últimas ${e.horas_maximas} h que mencionan ${kw}` +
+      (desc.length ? ` · Descartadas en la última búsqueda: ${desc.join(" y ")}.` : ".");
+
+    if (!ESTATICO) renderCompartir();
+  }
+
+  const fechaHora = iso => new Date(iso).toLocaleString("es-AR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  function renderEstadoEstatico(e) {
+    const u = e.ultima, st = $("status");
+    st.replaceChildren(el("span", { class: "dot" }));
+    st.append(el("span", { text: u ? `Actualizado ${haceLargo(u.timestamp)} · ${fechaHora(u.timestamp)}` : "Esperando la primera actualización…" }));
+    $("ieHoras").textContent = e.intervalo_horas;
+    $("ieDetalle").textContent = u
+      ? `Última actualización: ${fechaHora(u.timestamp)} · próxima aproximada: ${e.proxima_busqueda ? fechaHora(e.proxima_busqueda) : "—"}`
+      : "La primera actualización se publica en unos minutos.";
+    // enlace para quien administra el proyecto (la página está en usuario.github.io/repositorio)
+    const m = location.hostname.match(/^([^.]+)\.github\.io$/), repo = location.pathname.split("/")[1];
+    if (m && repo) { $("ieAdmin").href = `https://github.com/${m[1]}/${repo}/actions/workflows/buscar.yml`; $("ieAdmin").hidden = false; }
+  }
+
+  /* ---------- compartir ---------- */
+  function renderCompartir() {
+    const e = state.est, c = e.compartir || {};
+    $("share").classList.toggle("on", !!e.puedo_compartir || !!c.url);  // por el link público no se puede generar otro
+    const listo = c.estado === "listo" && c.url, ocupado = c.estado === "iniciando";
+    $("shareUrl").hidden = !listo; $("shareUrl").textContent = c.url || "";
+    $("shareCopy").hidden = !listo;
+    $("shareBtn").hidden = !e.puedo_compartir;
+    $("shareBtn").disabled = ocupado;
+    $("shareBtn").textContent = listo ? "Dejar de compartir" : ocupado ? "Generando…" : "Generar link";
+    $("shareHint").hidden = !!listo;
+    $("shareHint").textContent = c.estado === "error" ? c.mensaje
+      : ocupado ? "Creando el link, unos segundos…"
+      : "Genera un link para que otra persona lo vea desde su teléfono o PC, en cualquier red.";
+    $("shareHint").style.color = c.estado === "error" ? "var(--danger)" : "";
+  }
+
+  /* ---------- noticias ---------- */
+  function tarjeta(n, i, conFecha) {
+    const url = urlSegura(n.url);
+    const meta = el("div", { class: "meta" }, el("span", { class: "chipmedio", text: n.medio }));
+    if (n.nueva) meta.append(el("span", { class: "nuevabadge", text: "NUEVA" }));
+    if (n.fuente === "google") meta.append(el("span", { class: "tag", title: "Encontrada por Google Noticias; el enlace abre la nota en el medio", text: "vía Google Noticias" }));
+    (n.palabras || []).forEach((p, k) => meta.append(el("span", { class: "tag" + (p.toLowerCase() === "insssep" ? "" : " k2"), text: p })));
+    if (!conFecha && n.publicada) meta.append(el("span", { class: "when", text: "Publicada " + haceLargo(n.publicada) }));
+    if (conFecha && n.visto) meta.append(el("span", { class: "when", text: "Detectada " + haceLargo(n.visto) }));
+    const h = el("h3", {}, url ? el("a", { href: url, target: "_blank", rel: "noopener noreferrer", text: n.titulo }) : document.createTextNode(n.titulo));
+    const li = el("li", { class: "item" + (n.nueva ? " nueva" : "") }, meta, h);
+    li.style.animationDelay = Math.min(i, 14) * 45 + "ms";
+    return li;
+  }
+  function vacio(msg, sub) { return el("div", { class: "empty" }, msg, el("small", { text: sub || "" })); }
+
+  function renderNoticias() {
+    let items, conFecha = false;
+    if (state.tab === "ahora") {
+      items = (state.datos && state.datos.noticias) || [];
+      if ($("soloNuevas").checked) items = items.filter(n => n.nueva);
+      const fk = $("filtroPalabra").value;
+      if (fk) items = items.filter(n => (n.palabras || []).includes(fk));
+    } else { items = (state.hist && state.hist.noticias) || []; conFecha = true; }
+    if (!items.length) {
+      const sin = state.tab === "ahora" && !state.datos;
+      $("vista").replaceChildren(vacio(
+        sin ? (ESTATICO ? "Todavía no hay datos publicados." : "Todavía no se hizo ninguna búsqueda.") :
+        state.tab === "ahora" ? ($("soloNuevas").checked || $("filtroPalabra").value ? "No hay noticias con ese filtro." : "No hay noticias de las últimas 72 horas.") : "El historial está vacío.",
+        sin ? (ESTATICO ? "La primera actualización se publica en unos minutos." : "Tocá «Buscar ahora» para empezar.") : "Probá de nuevo más tarde."));
+      return;
+    }
+    $("vista").replaceChildren(el("ul", { class: "list" }, ...items.map((n, i) => tarjeta(n, i, conFecha))));
+  }
+
+  function render() { renderNoticias(); }
+
+  /* ---------- carga de datos ---------- */
+  async function cargarTodo() {
+    try {
+      const [a, h] = await Promise.all([
+        pedir(RUTAS.noticias),
+        pedir(RUTAS.historial)
+      ]);
+      state.datos = a.timestamp ? a : null; state.hist = h;
+      render();
+    } catch (e) { /* se reintenta en el próximo ciclo */ }
+  }
+
+  async function tick() {
+    try {
+      const prevBusy = state.est && state.est.buscando;
+      state.est = await pedir(RUTAS.estado);
+      renderEstado();
+      const ts = state.est.ultima && state.est.ultima.timestamp;
+      if (ts !== state.ultimaTs || (prevBusy && !state.est.buscando)) { state.ultimaTs = ts; cargarTodo(); }
+    } catch (e) {
+      $("status").replaceChildren(el("span", { class: "dot off" }), el("span", { text: ESTATICO ? "No se pudieron cargar los datos. Probá recargar la página." : "Sin conexión con el programa. ¿Está abierto en la PC?" }));
+    }
+    clearTimeout(state.timer);
+    state.timer = setTimeout(tick, ESTATICO ? 300000 : (state.est && state.est.buscando ? 1200 : 8000));
+  }
+
+  /* ---------- eventos ---------- */
+  $("btnBuscar").onclick = async () => {
+    try { const r = await accion("api/buscar"); if (r) { toast("Búsqueda iniciada"); tick(); } }
+    catch (e) { toast(e.message); }
+  };
+  $("auto").onchange = async ev => {
+    const activo = ev.target.checked;
+    try {
+      const r = await accion("api/automatico", { activo, horas: +$("horas").value });
+      if (!r) ev.target.checked = !activo; else toast(activo ? `Automático activado (cada ${r.intervalo_horas} h)` : "Automático desactivado");
+    } catch (e) { ev.target.checked = !activo; toast(e.message); }
+    tick();
+  };
+  $("horas").onchange = async () => {
+    if (!$("auto").checked) return;
+    try { await accion("api/automatico", { activo: true, horas: +$("horas").value }); toast("Intervalo actualizado"); } catch (e) { toast(e.message); }
+    tick();
+  };
+  const setTab = t => {
+    state.tab = t;
+    ["ahora", "hist"].forEach(k => $({ ahora: "tabAhora", hist: "tabHist" }[k]).setAttribute("aria-selected", k === t));
+    $("toolsNuevas").style.display = t === "ahora" ? "" : "none";
+    render();
+  };
+  $("tabAhora").onclick = () => setTab("ahora");
+  $("tabHist").onclick = () => setTab("hist");
+  $("soloNuevas").onchange = render;
+  $("filtroPalabra").onchange = render;
+  $("shareBtn").onclick = async () => {
+    const activo = !($("shareUrl").hidden === false);  // si ya hay link, el botón lo detiene
+    try {
+      const r = await accion("api/compartir", { activo });
+      if (activo && r.estado === "error") toast(r.mensaje);
+    } catch (e) { toast(e.message); }
+    tick();
+  };
+  $("shareCopy").onclick = async () => {
+    const u = $("shareUrl").textContent;
+    try { await navigator.clipboard.writeText(u); toast("Link copiado"); } catch (e) { window.prompt("Copiá el link:", u); }
+  };
+
+  if (ESTATICO) { $("btnBuscar").closest(".controls").hidden = true; $("infoEst").hidden = false; }
+  tick();
+})();
+</script>
+</body>
+</html>
