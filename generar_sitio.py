@@ -106,7 +106,7 @@ def main():
         visto = (historial.get(n["url"]) or {}).get("visto")
         n["nueva"] = bool(visto) and s._a_dt(visto) >= limite
     resultado["noticias_nuevas"] = sum(1 for n in resultado["noticias"] if n["nueva"])
-    resultado.pop("medios_detalle", None)  # no se usa en el sitio publicado
+    # (medios_detalle se conserva: la página muestra qué medios se consultaron)
 
     # --- datos que lee el panel
     estado_json = {
