@@ -57,12 +57,19 @@ _cfg = _leer_config()
 # Palabras clave (se pueden cambiar en config.json -> "palabras_clave")
 PALABRAS_CLAVE: List[str] = [p.strip() for p in _cfg.get("palabras_clave", ["INSSSEP", "Rafael Meneses"]) if p.strip()]
 PALABRA_CLAVE = " / ".join(PALABRAS_CLAVE)  # para mostrar
-def _patron(palabra: str):
+# Otras formas de nombrar lo mismo (config.json -> "sinonimos"). Se buscan igual que la palabra clave y cuentan como ella.
+SINONIMOS: Dict[str, List[str]] = _cfg.get("sinonimos", {"INSSSEP": [
+    "Instituto de Seguridad Social, Seguros y Préstamos", "Instituto de Seguridad Social, Seguros y Prestamos"]})
+TERMINOS: Dict[str, List[str]] = {p: [p] + list(SINONIMOS.get(p, [])) for p in PALABRAS_CLAVE}
+
+
+def _patron(terminos):
     """Coincide con la palabra o frase completa, sin importar mayúsculas ni espacios de más (InSSSeP, Rafael  Meneses...)"""
-    return re.compile(r'(?<!\w)' + r'\s+'.join(re.escape(x) for x in palabra.split()) + r'(?!\w)', re.IGNORECASE)
+    alt = '|'.join(r'\s+'.join(re.escape(x) for x in t.split()) for t in terminos)
+    return re.compile(r'(?<!\w)(?:' + alt + r')(?!\w)', re.IGNORECASE)
 
 
-_PATRONES = {p: _patron(p) for p in PALABRAS_CLAVE}
+_PATRONES = {p: _patron(TERMINOS[p]) for p in PALABRAS_CLAVE}
 
 # "cualquiera": basta con que la nota mencione UNA de las palabras clave (INSSSEP o Rafael Meneses).
 # "todas": la nota debe mencionarlas todas. (config.json -> "coincidencia")
@@ -455,7 +462,8 @@ class InsssepScraper:
         if sitio.get("wp") is False:
             return None
         origen = self._origen(medio)
-        buscar = PALABRAS_CLAVE[:1] if COINCIDENCIA == "todas" else PALABRAS_CLAVE
+        buscar = (TERMINOS[PALABRAS_CLAVE[0]] if COINCIDENCIA == "todas"
+                  else [t for p in PALABRAS_CLAVE for t in TERMINOS[p]])
         desde = (datetime.now(timezone.utc) - timedelta(hours=HORAS_MAX + 36)).strftime("%Y-%m-%dT%H:%M:%S")
         posts, vistos = [], set()
         for palabra in buscar:
@@ -689,11 +697,12 @@ class InsssepScraper:
         """Notas recientes de cualquier medio indexado por Google Noticias (RSS público)."""
         dias = max(1, -(-HORAS_MAX // 24))
         if COINCIDENCIA == "todas":
-            consultas = [" ".join(f'"{p}"' for p in PALABRAS_CLAVE)]
-        else:  # una consulta por palabra; las que no son "INSSSEP" se acotan a Chaco para evitar homónimos
-            consultas = [f'"{p}"' if p.lower() == "insssep" else f'"{p}" Chaco' for p in PALABRAS_CLAVE]
+            consultas = [(" ".join(f'"{p}"' for p in PALABRAS_CLAVE), None)]
+        else:  # una consulta por cada nombre (y sinónimo); los que no son "INSSSEP" se acotan a Chaco para evitar homónimos
+            consultas = [(f'"{t}"' if p.lower() == "insssep" else f'"{t}" Chaco', p)
+                         for p in PALABRAS_CLAVE for t in TERMINOS[p]]
         noticias, vistos = [], set()
-        for q in consultas:
+        for q, kw in consultas:
             try:
                 r = requests.get("https://news.google.com/rss/search", headers=self.headers, timeout=15,
                                  params={"q": f"{q} when:{dias}d", "hl": "es-419", "gl": "AR", "ceid": "AR:es-419"})
@@ -716,7 +725,7 @@ class InsssepScraper:
                 vistos.add(link)
                 src = it.find("source")
                 sitio = urlparse(src.get("url", "")).netloc.replace("www.", "") if src is not None else ""
-                palabras = list(PALABRAS_CLAVE) if COINCIDENCIA == "todas" else [p for p in PALABRAS_CLAVE if f'"{p.lower()}"' in q.lower()]
+                palabras = list(PALABRAS_CLAVE) if COINCIDENCIA == "todas" else [kw]
                 noticias.append({
                     "titulo": titulo[:150], "url": link, "medio": medio,
                     "timestamp": _ahora().isoformat(), "palabra_clave": ", ".join(palabras),
