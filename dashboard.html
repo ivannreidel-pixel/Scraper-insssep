@@ -76,6 +76,18 @@
   .info-est strong { font-weight: 600; color: var(--primary); }
   .info-est .ie-txt span { font-size: 13.5px; color: var(--muted); font-weight: 300; }
   @media (max-width: 560px) { .info-est { flex-wrap: wrap; } }
+  details.medios { margin-top: 26px; background: var(--card); border-radius: 14px; box-shadow: var(--shadow); }
+  details.medios summary { cursor: pointer; padding: 15px 20px; font-weight: 600; color: var(--primary); list-style: none; display: flex; justify-content: space-between; }
+  details.medios summary::-webkit-details-marker { display: none; }
+  details.medios summary::after { content: "+"; font-size: 1.3rem; line-height: 1; }
+  details.medios[open] summary::after { content: "–"; }
+  details.medios .det-body { padding: 0 20px 18px; }
+  .zonaH { font-size: 12.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; margin: 14px 0 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 13px; padding: 2px 10px; border-radius: 99px; border: 1.5px solid var(--accent); color: var(--accent-ink); }
+  .chip.hit { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .chip.fail { border-color: var(--line); color: var(--muted); text-decoration: line-through; }
+  .legend { font-size: 13px; color: var(--muted); margin-top: 12px; font-weight: 300; }
   .aviso { font-size: 13px; color: var(--muted); font-weight: 300; margin: 0 2px 12px; }
   .tag { font-size: 12px; font-weight: 500; padding: 1px 9px; border-radius: 99px; border: 1.5px solid var(--primary); color: var(--primary); }
   .tag.k2 { border-color: var(--accent); color: var(--accent-ink); }
@@ -254,6 +266,11 @@
   <p class="aviso" id="aviso"></p>
 
   <div id="vista"></div>
+
+  <details class="medios" id="mediosBox">
+    <summary>Medios consultados <span id="mediosN"></span></summary>
+    <div class="det-body" id="medios"></div>
+  </details>
 
 </main>
 
@@ -437,7 +454,25 @@
     $("vista").replaceChildren(el("ul", { class: "list" }, ...items.map((n, i) => tarjeta(n, i, conFecha))));
   }
 
-  function render() { renderNoticias(); }
+  function renderMedios() {
+    const det = state.datos && state.datos.medios_detalle, box = $("medios");
+    if (!det) { $("mediosN").textContent = ""; box.replaceChildren(el("p", { class: "legend", text: "Aparecen después de la primera búsqueda." })); return; }
+    const ok = det.filter(m => m.ok).length;
+    $("mediosN").textContent = `(${ok} de ${det.length})`;
+    const zonas = {};
+    det.forEach(m => (zonas[m.zona || "Otros"] ||= []).push(m));
+    const out = Object.entries(zonas).map(([z, ms]) =>
+      el("div", {}, el("div", { class: "zonaH", text: z }),
+        el("div", { class: "chips" }, ...ms.map(m => el("span", {
+          class: "chip" + (!m.ok ? " fail" : m.noticias ? " hit" : ""),
+          title: !m.ok ? (m.motivo || "No respondió") : m.noticias ? `${m.noticias} noticia(s)` : "Consultado, sin noticias",
+          text: m.nombre + (m.noticias ? ` · ${m.noticias}` : "")
+        })))));
+    out.push(el("p", { class: "legend", text: "Verde lleno = tiene noticias · borde verde = consultado, sin noticias · gris tachado = no respondió. Además se consulta Google Noticias." }));
+    box.replaceChildren(...out);
+  }
+
+  function render() { renderNoticias(); renderMedios(); }
 
   /* ---------- carga de datos ---------- */
   async function cargarTodo() {
