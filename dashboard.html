@@ -399,7 +399,8 @@
       : "La primera actualización se publica en unos minutos.";
     // enlace para quien administra el proyecto (la página está en usuario.github.io/repositorio)
     const m = location.hostname.match(/^([^.]+)\.github\.io$/), repo = location.pathname.split("/")[1];
-    if (m && repo) { $("ieAdmin").href = `https://github.com/${m[1]}/${repo}/actions/workflows/buscar.yml`; $("ieAdmin").hidden = false; }
+    // el botón solo aparece si se abre la página con ?admin al final (para quien administra); el enlace normal no lo muestra
+    if (m && repo && new URLSearchParams(location.search).has("admin")) { $("ieAdmin").href = `https://github.com/${m[1]}/${repo}/actions/workflows/buscar.yml`; $("ieAdmin").hidden = false; }
   }
 
   /* ---------- compartir ---------- */
